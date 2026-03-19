@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roblox Voice Commander</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: sans-serif;
+            background: #1a1a2e;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        h1 { font-size: 24px; margin-bottom: 8px; }
+        p  { font-size: 14px; color: #aaa; margin-bottom: 30px; }
+
+        .botones {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border-radius: 50px;
+            border: none;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform .1s, opacity .2s;
+        }
+
+        .btn:active { transform: scale(.96); }
+        .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+        #btn-conectar {
+            background: #2ecc71;
+            color: white;
+        }
+
+        #btn-desconectar {
+            background: #e74c3c;
+            color: white;
+        }
+
+        #indicador {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #555;
+            display: inline-block;
+            margin-right: 8px;
+            vertical-align: middle;
+            transition: background .3s;
+        }
+
+        #indicador.activo   { background: #2ecc71; animation: pulso 1s infinite; }
+        #indicador.hablando { background: #f39c12; animation: pulso .5s infinite; }
+
+        @keyframes pulso {
+            0%,100% { box-shadow: 0 0 0 0 rgba(255,255,255,.3); }
+            50%      { box-shadow: 0 0 0 10px rgba(255,255,255,0); }
+        }
+
+        #estado {
+            font-size: 15px;
+            font-weight: bold;
+            color: #aaa;
+            margin-bottom: 8px;
+        }
+
+        #ultimo {
+            font-size: 13px;
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        #log {
+            width: 100%;
+            max-width: 420px;
+            background: #16213e;
+            border-radius: 12px;
+            padding: 14px;
+            font-size: 12px;
+            color: #ccc;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        .log-item { padding: 4px 0; border-bottom: 1px solid #ffffff10; }
+        .log-ok   { color: #2ecc71; }
+        .log-err  { color: #e74c3c; }
+        .log-info { color: #3498db; }
+        .log-warn { color: #f39c12; }
+
+        #comandos-lista {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #555;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🎮 Roblox Voice</h1>
+    <p>Habla y el juego reacciona automáticamente</p>
+
+    <div class="botones">
+        <button class="btn" id="btn-conectar">🎙️ Conectar micrófono</button>
+        <button class="btn" id="btn-desconectar" disabled>🔴 Desconectar</button>
+    </div>
+
+    <div id="estado"><span id="indicador"></span>Desconectado</div>
+    <div id="ultimo"></div>
+
+    <div id="log"></div>
+
+    <div id="comandos-lista">
+        Comandos: crea un bloque · destruye un bloque · escudo · salta · lava lenta
+    </div>
+
+<script>
+    const SERVER_URL = "http://localhost:3000/setcomando"
+
+    const COMANDOS = [
+        "crea un bloque",
+        "destruye un bloque",
+        "escudo",
+        "salta",
+        "lava lenta",
+    ]
+
+    const btnConectar     = document.getElementById("btn-conectar")
+    const btnDesconectar  = document.getElementById("btn-desconectar")
+    const estado          = document.getElementById("estado")
+    const indicador       = document.getElementById("indicador")
+    const ultimo          = document.getElementById("ultimo")
+    const log             = document.getElementById("log")
+
+    let recognition  = null
+    let conectado    = false
+    let reiniciando  = false
+
+    function addLog(texto, tipo = "info") {
+        const div = document.createElement("div")
+        div.className = "log-item log-" + tipo
+        div.textContent = new Date().toLocaleTimeString() + " — " + texto
+        log.prepend(div)
+    }
+
+    function setEstado(texto, tipo) {
+        indicador.className = tipo || ""
+        estado.innerHTML = `<span id="indicador" class="${tipo || ""}"></span>${texto}`
+    }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+
+    if (!SpeechRecognition) {
+        setEstado("❌ Usa Chrome para usar el micrófono")
+        btnConectar.disabled = true
+        addLog("Navegador sin soporte de voz — usa Chrome", "err")
+    }
+
+    function crearReconocimiento() {
+        const r = new SpeechRecognition()
+        r.lang           = "es-ES"
+        r.continuous     = false
+        r.interimResults = false
+
+        r.onstart = () => {
+            setEstado("🎙️ Escuchando...", "activo")
+        }
+
+        r.onspeechstart = () => {
+            setEstado("🔊 Detectando voz...", "hablando")
+        }
+
+        r.onresult = (e) => {
+            const texto = e.results[0][0].transcript.toLowerCase().trim()
+            addLog(`Escuché: "${texto}"`, "info")
+            ultimo.textContent = `Último: "${texto}"`
+            procesarComando(texto)
+        }
+
+        r.onerror = (e) => {
+            if (e.error === "no-speech") return  // ignorar silencio
+            addLog(`Error: ${e.error}`, "err")
+        }
+
+        r.onend = () => {
+            // Si sigue conectado, reinicia automáticamente
+            if (conectado && !reiniciando) {
+                reiniciando = true
+                setTimeout(() => {
+                    reiniciando = false
+                    if (conectado) {
+                        try { recognition.start() } catch(e) {}
+                    }
+                }, 200)
+            }
+        }
+
+        return r
+    }
+
+    async function procesarComando(texto) {
+        let encontrado = null
+        for (const cmd of COMANDOS) {
+            if (texto.includes(cmd)) {
+                encontrado = cmd
+                break
+            }
+        }
+
+        if (!encontrado) {
+            addLog("No se reconoció ningún comando", "warn")
+            return
+        }
+
+        addLog(`Comando: "${encontrado}"`, "ok")
+
+        try {
+            const res  = await fetch(SERVER_URL, {
+                method:  "POST",
+                headers: { "Content-Type": "application/json" },
+                body:    JSON.stringify({ comando: encontrado })
+            })
+            const data = await res.json()
+
+            if (data.ok) {
+                addLog(`✅ Enviado a Roblox: "${encontrado}"`, "ok")
+                setEstado(`✅ ${encontrado}`, "activo")
+            } else if (data.cooldown) {
+                addLog(`⏳ "${encontrado}" en cooldown — espera ${data.cooldown}s`, "warn")
+            }
+        } catch (err) {
+            addLog("❌ Servidor no conectado", "err")
+            setEstado("❌ Servidor no conectado")
+        }
+    }
+
+    // ── Conectar ──
+    btnConectar.addEventListener("click", () => {
+        if (!SpeechRecognition) return
+        conectado   = true
+        recognition = crearReconocimiento()
+
+        try {
+            recognition.start()
+            btnConectar.disabled    = true
+            btnDesconectar.disabled = false
+            addLog("Micrófono conectado — escuchando siempre", "ok")
+        } catch(e) {
+            addLog("Error al iniciar micrófono: " + e.message, "err")
+        }
+    })
+
+    // ── Desconectar ──
+    btnDesconectar.addEventListener("click", () => {
+        conectado = false
+        if (recognition) recognition.stop()
+        btnConectar.disabled    = false
+        btnDesconectar.disabled = true
+        setEstado("Desconectado")
+        addLog("Micrófono desconectado", "warn")
+    })
+</script>
+</body>
+</html>
