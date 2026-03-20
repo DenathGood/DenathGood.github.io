@@ -13,6 +13,7 @@ const JWT_SECRET = "robloxvoice_secreto_2024"
 
 app.use(cors())
 app.use(express.json())
+
 app.get("/", (req, res) => {
     res.sendFile(__dirname + "/index.html")
 })
@@ -22,6 +23,20 @@ const pool = new Pool({
     connectionString: "postgresql://roblox_voice_db_user:YAtUpRX6rZdlJQx2R7dxTQVQgSLKBC77@dpg-d6u4c49aae7s73ea0c00-a.oregon-postgres.render.com/roblox_voice_db",
     ssl: { rejectUnauthorized: false }
 })
+
+// ── Cooldowns por comando (ms) ──
+const COOLDOWNS = {
+    "lanza fuego":        2000,
+    "explosion":          15000,
+    "escudo de fuego":    30000,
+    "crea un bloque":     5000,
+    "destruye un bloque": 10000,
+    "escudo":             30000,
+    "salta":              8000,
+    "lava lenta":         20000,
+}
+
+const ultimoUso = {}
 
 // ── Crear tablas si no existen ──
 async function iniciarDB() {
@@ -105,7 +120,6 @@ app.post("/auth/login", async (req, res) => {
 // SESIONES ROBLOX
 // ============================================================
 
-// Roblox registra al jugador con su código
 app.post("/registrar", async (req, res) => {
     const { codigo, userId, jobId, nombre } = req.body
     if (!codigo || !userId || !jobId) return res.json({ ok: false, error: "Faltan datos" })
@@ -123,7 +137,6 @@ app.post("/registrar", async (req, res) => {
     }
 })
 
-// Página web vincula su cuenta con el código
 app.post("/vincular", verificarToken, async (req, res) => {
     const { codigo } = req.body
     if (!codigo) return res.json({ ok: false, error: "Falta el código" })
@@ -137,22 +150,41 @@ app.post("/vincular", verificarToken, async (req, res) => {
     }
 })
 
-// Página web manda comando
 app.post("/setcomando", verificarToken, async (req, res) => {
     const { comando, codigo } = req.body
     if (!comando || !codigo) return res.json({ ok: false, error: "Faltan datos" })
+
+    const cmd    = comando.toLowerCase().trim()
+    const ahora  = Date.now()
+    const key    = req.usuario.id + "_" + cmd
+    const ultimo = ultimoUso[key] || 0
+    const espera = COOLDOWNS[cmd] || 3000
+
+    if (ahora - ultimo < espera) {
+        const restante = Math.ceil((espera - (ahora - ultimo)) / 1000)
+        console.log(`⏳ "${cmd}" en cooldown — espera ${restante}s`)
+        return res.json({ ok: false, cooldown: restante })
+    }
+
     try {
-        const s = await pool.query("SELECT * FROM sesiones WHERE codigo=$1 AND user_id=$2 AND activo=TRUE", [codigo.toUpperCase(), req.usuario.id])
+        const s = await pool.query(
+            "SELECT * FROM sesiones WHERE codigo=$1 AND user_id=$2 AND activo=TRUE",
+            [codigo.toUpperCase(), req.usuario.id]
+        )
         if (!s.rows.length) return res.json({ ok: false, error: "Sesión no válida — vincula tu código primero" })
-        await pool.query("INSERT INTO comandos (user_id,roblox_uid,job_id,comando) VALUES ($1,$2,$3,$4)", [req.usuario.id, s.rows[0].roblox_uid, s.rows[0].job_id, comando.toLowerCase()])
-        console.log(`[Comando] ${s.rows[0].nombre}: "${comando}"`)
+
+        ultimoUso[key] = ahora
+        await pool.query(
+            "INSERT INTO comandos (user_id,roblox_uid,job_id,comando) VALUES ($1,$2,$3,$4)",
+            [req.usuario.id, s.rows[0].roblox_uid, s.rows[0].job_id, cmd]
+        )
+        console.log(`[Comando] ${s.rows[0].nombre}: "${cmd}"`)
         res.json({ ok: true })
     } catch (e) {
         res.json({ ok: false, error: "Error al guardar comando" })
     }
 })
 
-// Roblox consulta comandos pendientes por jugador
 app.get("/comando", async (req, res) => {
     const { userId, jobId } = req.query
     if (!userId || !jobId) return res.json({ comando: "ninguno" })
