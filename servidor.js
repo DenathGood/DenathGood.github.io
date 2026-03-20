@@ -13,6 +13,9 @@ const JWT_SECRET = "robloxvoice_secreto_2024"
 
 app.use(cors())
 app.use(express.json())
+app.get("/", (req, res) => {
+    res.sendFile(__dirname + "/index.html")
+})
 
 // ── Conexión a PostgreSQL ──
 const pool = new Pool({
