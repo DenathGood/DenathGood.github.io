@@ -28,8 +28,8 @@
         .codigo-box .label { font-size: 12px; color: #aaa; margin-bottom: 6px; }
         .codigo-box .codigo { font-size: 28px; font-weight: bold; letter-spacing: 4px; color: #3498db; }
         #indicador { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: #555; margin-right: 8px; vertical-align: middle; }
-        #indicador.activo   { background: #2ecc71; animation: pulso 1s infinite; }
-        #indicador.hablando { background: #f39c12; animation: pulso .5s infinite; }
+        #indicador.activo   { background: #2ecc71; animation: pulso .6s infinite; }
+        #indicador.hablando { background: #f39c12; animation: pulso .3s infinite; }
         @keyframes pulso { 0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.3)} 50%{box-shadow:0 0 0 8px rgba(255,255,255,0)} }
         #estado { font-size: 14px; color: #aaa; margin-bottom: 16px; text-align: center; }
         #ultimo { font-size: 12px; color: #666; text-align: center; margin-bottom: 16px; }
@@ -91,12 +91,13 @@
         <button class="btn btn-rojo hidden" id="btn-desconectar" onclick="desconectarMic()">🔴 Desconectar</button>
         <button class="btn btn-gris" onclick="desvincular()">Cambiar código</button>
         <div id="log"></div>
-        <div class="comandos">Comandos: crea un bloque · destruye un bloque · escudo · salta · lava lenta</div>
+        <div class="comandos">🔥 lanza fuego · explosion · escudo de fuego · salta</div>
     </div>
 </div>
 
 <script>
 const SERVER = "https://denathgood-github-io.onrender.com"
+
 const COMANDOS = [
     "lanza fuego",
     "explosion",
@@ -105,13 +106,14 @@ const COMANDOS = [
     "salta",
 ]
 
-let token = localStorage.getItem("token")
-let username = localStorage.getItem("username")
-let codigo = localStorage.getItem("codigo")
+let token      = localStorage.getItem("token")
+let username   = localStorage.getItem("username")
+let codigo     = localStorage.getItem("codigo")
 let nombreRblx = localStorage.getItem("nombreRoblox")
 let recognition = null
-let conectado = false
+let conectado   = false
 let reiniciando = false
+let procesando  = false  // evita duplicados
 
 window.onload = () => { token ? mostrarPrincipal() : mostrarLogin() }
 
@@ -140,6 +142,15 @@ function msg(id, texto, tipo) {
     const el = document.getElementById(id)
     el.className = tipo === "error" ? "error" : "exito"
     el.textContent = texto
+}
+
+async function post(ruta, datos, conToken) {
+    try {
+        const headers = {"Content-Type":"application/json"}
+        if (conToken) headers["Authorization"] = `Bearer ${token}`
+        const r = await fetch(SERVER + ruta, {method:"POST", headers, body: JSON.stringify(datos)})
+        return await r.json()
+    } catch(e) { return {ok:false, error:"Sin conexión al servidor"} }
 }
 
 async function login() {
@@ -175,15 +186,6 @@ async function vincular() {
     mostrarVoz()
 }
 
-async function post(ruta, datos, conToken) {
-    try {
-        const headers = {"Content-Type":"application/json"}
-        if (conToken) headers["Authorization"] = `Bearer ${token}`
-        const r = await fetch(SERVER + ruta, {method:"POST", headers, body: JSON.stringify(datos)})
-        return await r.json()
-    } catch(e) { return {ok:false, error:"Sin conexión al servidor"} }
-}
-
 function addLog(texto, tipo="info") {
     const log = document.getElementById("log")
     const div = document.createElement("div")
@@ -200,49 +202,103 @@ const SR = window.SpeechRecognition || window.webkitSpeechRecognition
 
 function crearReconocimiento() {
     const r = new SR()
-    r.lang = "es-ES"; r.continuous = false; r.interimResults = false
+    r.lang           = "es-ES"
+    r.continuous     = true   // ✅ continuo — no para entre frases
+    r.interimResults = true   // ✅ resultados intermedios — más rápido
+
     r.onstart = () => setEstado("🎙️ Escuchando...", "activo")
     r.onspeechstart = () => setEstado("🔊 Detectando voz...", "hablando")
-    r.onerror = (e) => { if (e.error !== "no-speech") addLog("Error: " + e.error, "err") }
-    r.onresult = (e) => {
-        const texto = e.results[0][0].transcript.toLowerCase().trim()
-        addLog(`Escuché: "${texto}"`, "info")
-        document.getElementById("ultimo").textContent = `Último: "${texto}"`
-        procesarComando(texto)
+
+    r.onerror = (e) => {
+        if (e.error === "no-speech") return
+        addLog("Error: " + e.error, "err")
+        // Reiniciar si hay error
+        if (conectado) {
+            setTimeout(() => {
+                if (conectado) try { recognition = crearReconocimiento(); recognition.start() } catch(e){}
+            }, 300)
+        }
     }
+
+    r.onresult = (e) => {
+        // Procesar resultados intermedios para mayor velocidad
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+            const texto = e.results[i][0].transcript.toLowerCase().trim()
+
+            // Procesar tanto resultados finales como intermedios
+            if (e.results[i].isFinal) {
+                addLog(`Escuché: "${texto}"`, "info")
+                document.getElementById("ultimo").textContent = `Último: "${texto}"`
+                procesarComando(texto)
+            } else {
+                // Resultado intermedio — buscar comando sin esperar que termine
+                for (const cmd of COMANDOS) {
+                    if (texto.includes(cmd) && !procesando) {
+                        procesando = true
+                        addLog(`⚡ Detectado: "${cmd}"`, "info")
+                        document.getElementById("ultimo").textContent = `Detectando: "${cmd}"`
+                        enviarComando(cmd).then(() => {
+                            setTimeout(() => { procesando = false }, 1000)
+                        })
+                        break
+                    }
+                }
+            }
+        }
+    }
+
     r.onend = () => {
         if (conectado && !reiniciando) {
             reiniciando = true
-            setTimeout(() => { reiniciando=false; if(conectado) try{recognition.start()}catch(e){} }, 200)
+            setTimeout(() => {
+                reiniciando = false
+                if (conectado) try { recognition.start() } catch(e){}
+            }, 100)
         }
     }
+
     return r
 }
 
+async function enviarComando(cmd) {
+    const r = await post("/setcomando", {comando: cmd, codigo}, true)
+    if (r.ok) {
+        addLog(`✅ Enviado: "${cmd}"`, "ok")
+        setEstado(`✅ ${cmd}`, "activo")
+    } else if (r.cooldown) {
+        addLog(`⏳ "${cmd}" cooldown ${r.cooldown}s`, "warn")
+    } else {
+        addLog(`❌ ${r.error || "Error"}`, "err")
+    }
+}
+
 async function procesarComando(texto) {
-    let encontrado = null
-    for (const cmd of COMANDOS) { if (texto.includes(cmd)) { encontrado=cmd; break } }
-    if (!encontrado) { addLog("No se reconoció ningún comando","warn"); return }
-    addLog(`Comando: "${encontrado}"`, "ok")
-    const r = await post("/setcomando", {comando:encontrado, codigo}, true)
-    if (r.ok) { addLog("✅ Enviado a Roblox", "ok"); setEstado(`✅ ${encontrado}`, "activo") }
-    else addLog(`❌ ${r.error||"Error"}`, "err")
+    for (const cmd of COMANDOS) {
+        if (texto.includes(cmd)) {
+            await enviarComando(cmd)
+            return
+        }
+    }
+    addLog(`No reconocido: "${texto}"`, "warn")
 }
 
 function conectarMic() {
     if (!SR) return addLog("Usa Chrome","err")
-    conectado = true; recognition = crearReconocimiento()
+    conectado = true
+    recognition = crearReconocimiento()
     try {
         recognition.start()
         hide("btn-conectar"); show("btn-desconectar")
-        addLog("Micrófono conectado","ok")
+        addLog("Micrófono conectado — escuchando siempre","ok")
     } catch(e) { addLog("Error: "+e.message,"err") }
 }
 
 function desconectarMic() {
-    conectado = false; if (recognition) recognition.stop()
+    conectado = false
+    if (recognition) recognition.stop()
     show("btn-conectar"); hide("btn-desconectar")
-    setEstado("Desconectado"); addLog("Micrófono desconectado","warn")
+    setEstado("Desconectado")
+    addLog("Micrófono desconectado","warn")
 }
 </script>
 </body>
