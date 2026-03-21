@@ -1,4 +1,4 @@
- const express  = require("express")
+const express  = require("express")
 const cors     = require("cors")
 const { Pool } = require("pg")
 const bcrypt   = require("bcrypt")
@@ -15,31 +15,15 @@ app.get("/", (req, res) => {
     res.sendFile(__dirname + "/index.html")
 })
 
+// Keep-alive ping desde la página web
+app.get("/ping", (req, res) => {
+    res.json({ ok: true, time: Date.now() })
+})
+
 const pool = new Pool({
     connectionString: "postgresql://roblox_voice_db_user:YAtUpRX6rZdlJQx2R7dxTQVQgSLKBC77@dpg-d6u4c49aae7s73ea0c00-a.oregon-postgres.render.com/roblox_voice_db",
     ssl: { rejectUnauthorized: false }
 })
-
-const COOLDOWNS = {
-    "lanza fuego":   2000,
-    "lanza agua":    2000,
-    "lanza tierra":  2000,
-    "lanza aire":    2000,
-    "escudo fuego":  18000,
-    "escudo agua":   18000,
-    "escudo tierra": 18000,
-    "escudo aire":   18000,
-    "fuego":         2000,
-    "agua":          2000,
-    "tierra":        2000,
-    "aire":          2000,
-    "ataca":         2000,
-    "escudo":        18000,
-    "protege":       18000,
-    "defiende":      18000,
-}
-
-const ultimoUso = {}
 
 async function iniciarDB() {
     await pool.query(`CREATE TABLE IF NOT EXISTS usuarios (
@@ -127,29 +111,20 @@ app.post("/vincular", verificarToken, async (req, res) => {
     }
 })
 
+// Sin cooldowns — guarda el comando directamente
 app.post("/setcomando", verificarToken, async (req, res) => {
     const { comando, codigo } = req.body
     if (!comando || !codigo) return res.json({ ok: false, error: "Faltan datos" })
 
-    const cmd    = comando.toLowerCase().trim()
-    const ahora  = Date.now()
-    const key    = req.usuario.id + "_" + cmd
-    const ultimo = ultimoUso[key] || 0
-    const espera = COOLDOWNS[cmd] || 2000
-
-    if (ahora - ultimo < espera) {
-        const restante = Math.ceil((espera - (ahora - ultimo)) / 1000)
-        return res.json({ ok: false, cooldown: restante })
-    }
+    const cmd = comando.toLowerCase().trim()
 
     try {
         const s = await pool.query(
             "SELECT * FROM sesiones WHERE codigo=$1 AND user_id=$2 AND activo=TRUE",
             [codigo.toUpperCase(), req.usuario.id]
         )
-        if (!s.rows.length) return res.json({ ok: false, error: "Sesión no válida" })
+        if (!s.rows.length) return res.json({ ok: false, error: "Sesión no válida — vincula tu código primero" })
 
-        ultimoUso[key] = ahora
         await pool.query(
             "INSERT INTO comandos (user_id,roblox_uid,job_id,comando) VALUES ($1,$2,$3,$4)",
             [req.usuario.id, s.rows[0].roblox_uid, s.rows[0].job_id, cmd]
@@ -163,6 +138,8 @@ app.post("/setcomando", verificarToken, async (req, res) => {
 
 app.get("/comando", async (req, res) => {
     const { userId, jobId } = req.query
+    // Ignorar pings del keep-alive
+    if (userId === "ping" || userId === "ka") return res.json({ comando: "ninguno" })
     if (!userId || !jobId) return res.json({ comando: "ninguno" })
     try {
         const r = await pool.query(
