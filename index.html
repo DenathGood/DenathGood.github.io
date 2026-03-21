@@ -1,327 +1,874 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Roblox Voice Commander</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: sans-serif; background: #0d0d1a; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
-        .panel { background: #13132a; border-radius: 18px; padding: 28px; width: 100%; max-width: 400px; border: 1px solid #ffffff15; }
-        h1 { font-size: 22px; margin-bottom: 6px; text-align: center; }
-        .sub { font-size: 13px; color: #888; text-align: center; margin-bottom: 24px; }
-        input { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid #ffffff15; background: #1a1a35; color: white; font-size: 14px; margin-bottom: 12px; outline: none; transition: border .2s; }
-        input:focus { border-color: #6c63ff; }
-        input::placeholder { color: #666; }
-        .btn { width: 100%; padding: 13px; border-radius: 10px; border: none; font-size: 15px; font-weight: bold; cursor: pointer; transition: opacity .15s, transform .1s; margin-bottom: 10px; }
-        .btn:active { transform: scale(.98); }
-        .btn:disabled { opacity: .35; cursor: not-allowed; }
-        .btn-verde  { background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; }
-        .btn-rojo   { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; }
-        .btn-azul   { background: linear-gradient(135deg, #6c63ff, #4834d4); color: white; }
-        .btn-gris   { background: #2a2a45; color: #aaa; font-size: 13px; border: 1px solid #ffffff10; }
-        .toggle { font-size: 12px; color: #6c63ff; text-align: center; cursor: pointer; margin-top: 4px; }
-        .toggle:hover { text-decoration: underline; }
-        .error { background: #e74c3c18; border: 1px solid #e74c3c55; color: #e74c3c; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; }
-        .exito { background: #2ecc7118; border: 1px solid #2ecc7155; color: #2ecc71; padding: 10px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; }
-        .codigo-box { background: #1a1a35; border-radius: 12px; padding: 16px; text-align: center; margin-bottom: 16px; border: 1px solid #6c63ff44; }
-        .codigo-box .label { font-size: 12px; color: #888; margin-bottom: 6px; }
-        .codigo-box .nombre { font-size: 20px; font-weight: bold; color: #6c63ff; }
-        #mic-btn { width: 80px; height: 80px; border-radius: 50%; border: 3px solid #6c63ff; background: #1a1a35; font-size: 32px; cursor: pointer; margin: 0 auto 16px; display: block; transition: all .2s; }
-        #mic-btn.activo { background: #2ecc71; border-color: #2ecc71; animation: pulso .8s infinite; }
-        #mic-btn.hablando { background: #f39c12; border-color: #f39c12; animation: pulso .4s infinite; }
-        @keyframes pulso { 0%,100%{box-shadow:0 0 0 0 rgba(108,99,255,.4)} 50%{box-shadow:0 0 0 14px rgba(108,99,255,0)} }
-        #estado { font-size: 13px; color: #888; margin-bottom: 12px; text-align: center; min-height: 20px; }
-        #ultimo { font-size: 12px; color: #555; text-align: center; margin-bottom: 12px; min-height: 16px; }
-        #log { background: #0d0d1a; border-radius: 10px; padding: 12px; font-size: 11px; max-height: 150px; overflow-y: auto; border: 1px solid #ffffff08; }
-        .log-item { padding: 3px 0; border-bottom: 1px solid #ffffff06; }
-        .log-ok   { color: #2ecc71; }
-        .log-err  { color: #e74c3c; }
-        .log-info { color: #6c63ff; }
-        .log-warn { color: #f39c12; }
-        .comandos-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 12px; }
-        .cmd-tag { background: #1a1a35; border: 1px solid #ffffff10; border-radius: 8px; padding: 6px 8px; font-size: 11px; color: #888; text-align: center; }
-        .cmd-tag.fuego  { border-color: #e74c3c44; color: #e74c3c; }
-        .cmd-tag.agua   { border-color: #3498db44; color: #3498db; }
-        .cmd-tag.tierra { border-color: #8b5e3c44; color: #8b5e3c; }
-        .cmd-tag.aire   { border-color: #87ceeb44; color: #87ceeb; }
-        .hidden { display: none; }
-        .usuario-info { font-size: 13px; color: #888; text-align: center; margin-bottom: 16px; }
-        .usuario-info .nombre { color: #6c63ff; font-weight: bold; }
-        .usuario-info .salir  { color: #e74c3c; cursor: pointer; font-size: 11px; margin-left: 8px; }
-        .usuario-info .salir:hover { text-decoration: underline; }
-        .btns-row { display: flex; gap: 8px; margin-bottom: 10px; }
-        .btns-row .btn { margin-bottom: 0; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>⚡ Roblox Voice Commander</title>
+<style>
+:root {
+    --bg:       #080812;
+    --surface:  #10101f;
+    --surface2: #16162a;
+    --border:   rgba(255,255,255,0.08);
+    --accent:   #6c63ff;
+    --accent2:  #4834d4;
+    --green:    #2ecc71;
+    --red:      #e74c3c;
+    --orange:   #f39c12;
+    --text:     #e8e8f0;
+    --muted:    #666680;
+    --fuego:    #e74c3c;
+    --agua:     #3498db;
+    --tierra:   #8b6914;
+    --aire:     #87ceeb;
+}
+* { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { height:100%; overflow-x:hidden; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 16px;
+}
+
+/* ── PANTALLAS ── */
+.screen { width:100%; max-width:420px; display:none; flex-direction:column; gap:0; }
+.screen.active { display:flex; }
+
+/* ── CARD ── */
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px 24px;
+    margin-bottom: 12px;
+}
+.card-title { font-size:20px; font-weight:700; text-align:center; margin-bottom:4px; }
+.card-sub   { font-size:12px; color:var(--muted); text-align:center; margin-bottom:20px; }
+
+/* ── INPUTS ── */
+input {
+    width:100%; padding:13px 16px;
+    border-radius:12px;
+    border:1px solid var(--border);
+    background:var(--surface2);
+    color:var(--text);
+    font-size:14px;
+    margin-bottom:10px;
+    outline:none;
+    transition:border .2s, box-shadow .2s;
+}
+input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(108,99,255,.15); }
+input::placeholder { color:var(--muted); }
+
+/* ── BOTONES ── */
+.btn {
+    width:100%; padding:14px;
+    border-radius:12px; border:none;
+    font-size:14px; font-weight:700;
+    cursor:pointer;
+    transition:opacity .15s, transform .1s, box-shadow .2s;
+    margin-bottom:8px;
+    letter-spacing:.3px;
+}
+.btn:active  { transform:scale(.97); }
+.btn:disabled { opacity:.3; cursor:not-allowed; }
+.btn-primary {
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    color:#fff;
+    box-shadow:0 4px 20px rgba(108,99,255,.3);
+}
+.btn-primary:hover { box-shadow:0 6px 28px rgba(108,99,255,.45); }
+.btn-success {
+    background:linear-gradient(135deg, #2ecc71, #27ae60);
+    color:#fff;
+    box-shadow:0 4px 20px rgba(46,204,113,.25);
+}
+.btn-danger {
+    background:linear-gradient(135deg, #e74c3c, #c0392b);
+    color:#fff;
+}
+.btn-ghost {
+    background:var(--surface2);
+    color:var(--muted);
+    border:1px solid var(--border);
+    font-size:13px;
+}
+.btn-ghost:hover { color:var(--text); border-color:rgba(255,255,255,.15); }
+
+/* ── LINK ── */
+.link { font-size:12px; color:var(--accent); text-align:center; cursor:pointer; padding:8px; }
+.link:hover { text-decoration:underline; }
+
+/* ── MENSAJES ── */
+.msg { padding:10px 14px; border-radius:10px; font-size:13px; margin-bottom:10px; display:none; }
+.msg.error { background:rgba(231,76,60,.12); border:1px solid rgba(231,76,60,.4); color:#ff6b6b; display:block; }
+.msg.exito { background:rgba(46,204,113,.12); border:1px solid rgba(46,204,113,.4); color:#2ecc71; display:block; }
+
+/* ── CÓDIGO BOX ── */
+.code-box {
+    background:var(--surface2);
+    border:1px solid rgba(108,99,255,.3);
+    border-radius:14px;
+    padding:14px 16px;
+    text-align:center;
+    margin-bottom:16px;
+}
+.code-box .code-label { font-size:11px; color:var(--muted); margin-bottom:4px; }
+.code-box .code-player { font-size:17px; font-weight:700; color:var(--accent); }
+
+/* ── MICRÓFONO ── */
+.mic-wrapper { display:flex; flex-direction:column; align-items:center; margin:8px 0 16px; }
+#mic-btn {
+    width:86px; height:86px;
+    border-radius:50%;
+    border:2.5px solid var(--accent);
+    background:var(--surface2);
+    font-size:34px;
+    cursor:pointer;
+    transition:all .25s cubic-bezier(.34,1.56,.64,1);
+    position:relative;
+    outline:none;
+}
+#mic-btn::before {
+    content:'';
+    position:absolute;
+    inset:-6px;
+    border-radius:50%;
+    border:2px solid transparent;
+    transition:all .3s;
+}
+#mic-btn.listening {
+    background:linear-gradient(135deg, #2ecc71, #27ae60);
+    border-color:#2ecc71;
+    transform:scale(1.06);
+    box-shadow:0 0 0 0 rgba(46,204,113,.5);
+    animation:pulse-green .9s ease-in-out infinite;
+}
+#mic-btn.detecting {
+    background:linear-gradient(135deg, #f39c12, #e67e22);
+    border-color:#f39c12;
+    transform:scale(1.1);
+    animation:pulse-orange .4s ease-in-out infinite;
+}
+#mic-btn.sending {
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    border-color:var(--accent);
+    animation:pulse-purple .3s ease-in-out 3;
+}
+@keyframes pulse-green  { 0%,100%{box-shadow:0 0 0 0 rgba(46,204,113,.5)}  50%{box-shadow:0 0 0 16px rgba(46,204,113,0)} }
+@keyframes pulse-orange { 0%,100%{box-shadow:0 0 0 0 rgba(243,156,18,.5)}  50%{box-shadow:0 0 0 18px rgba(243,156,18,0)} }
+@keyframes pulse-purple { 0%,100%{box-shadow:0 0 0 0 rgba(108,99,255,.5)} 50%{box-shadow:0 0 0 14px rgba(108,99,255,0)} }
+
+#mic-status {
+    font-size:12px;
+    color:var(--muted);
+    margin-top:10px;
+    text-align:center;
+    min-height:18px;
+    transition:color .2s;
+}
+#mic-status.ok      { color:var(--green); }
+#mic-status.warn    { color:var(--orange); }
+#mic-status.sending { color:var(--accent); }
+
+/* ── LOG ── */
+.log-container {
+    background:var(--surface2);
+    border:1px solid var(--border);
+    border-radius:12px;
+    overflow:hidden;
+    margin-bottom:12px;
+}
+.log-header {
+    padding:8px 14px;
+    font-size:11px;
+    color:var(--muted);
+    border-bottom:1px solid var(--border);
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+.log-clear { cursor:pointer; color:var(--accent); font-size:10px; }
+.log-clear:hover { text-decoration:underline; }
+#log {
+    padding:8px 12px;
+    font-size:11px;
+    max-height:130px;
+    overflow-y:auto;
+    font-family:'SF Mono','Fira Code',monospace;
+}
+#log::-webkit-scrollbar { width:3px; }
+#log::-webkit-scrollbar-track { background:transparent; }
+#log::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+.log-entry { padding:2.5px 0; border-bottom:1px solid rgba(255,255,255,.03); display:flex; gap:6px; align-items:flex-start; }
+.log-time { color:rgba(255,255,255,.2); flex-shrink:0; font-size:10px; margin-top:1px; }
+.log-text { flex:1; }
+.log-ok     { color:#2ecc71; }
+.log-err    { color:#e74c3c; }
+.log-info   { color:#6c63ff; }
+.log-warn   { color:#f39c12; }
+.log-sent   { color:#00d4aa; }
+
+/* ── COMANDOS GRID ── */
+.cmd-grid {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:5px;
+    margin-top:8px;
+}
+.cmd-pill {
+    padding:7px 10px;
+    border-radius:9px;
+    font-size:10px;
+    font-weight:600;
+    text-align:center;
+    background:var(--surface2);
+    border:1px solid var(--border);
+    color:var(--muted);
+    transition:all .2s;
+    cursor:default;
+    user-select:none;
+}
+.cmd-pill.fuego  { border-color:rgba(231,76,60,.35);  color:var(--fuego); }
+.cmd-pill.agua   { border-color:rgba(52,152,219,.35); color:var(--agua); }
+.cmd-pill.tierra { border-color:rgba(139,105,20,.4);  color:var(--tierra); }
+.cmd-pill.aire   { border-color:rgba(135,206,235,.35);color:var(--aire); }
+.cmd-pill.active { transform:scale(1.04); filter:brightness(1.3); }
+
+/* ── STATUS BAR ── */
+.status-bar {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 12px;
+    background:var(--surface2);
+    border-radius:10px;
+    margin-bottom:10px;
+    font-size:11px;
+}
+.status-dot {
+    width:7px; height:7px;
+    border-radius:50%;
+    background:var(--muted);
+    flex-shrink:0;
+    transition:background .3s;
+}
+.status-dot.online { background:var(--green); animation:blink 2s ease-in-out infinite; }
+.status-dot.error  { background:var(--red); }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+.status-text { color:var(--muted); flex:1; }
+.status-text.ok { color:var(--green); }
+
+/* ── USUARIO INFO ── */
+.user-row {
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    margin-bottom:14px;
+    font-size:13px;
+    color:var(--muted);
+}
+.user-name { color:var(--accent); font-weight:700; }
+.user-logout { color:var(--red); cursor:pointer; font-size:11px; }
+.user-logout:hover { text-decoration:underline; }
+
+/* ── KEEP ALIVE BADGE ── */
+.keepalive-badge {
+    position:fixed;
+    bottom:12px;
+    right:12px;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:5px 10px;
+    font-size:10px;
+    color:var(--muted);
+    display:flex;
+    align-items:center;
+    gap:5px;
+}
+.keepalive-dot {
+    width:5px; height:5px;
+    border-radius:50%;
+    background:var(--green);
+    animation:blink 3s ease-in-out infinite;
+}
+
+/* ── DIVIDER ── */
+.divider {
+    display:flex; align-items:center; gap:10px;
+    margin:4px 0 12px;
+    font-size:11px; color:var(--muted);
+}
+.divider::before,.divider::after {
+    content:''; flex:1;
+    height:1px; background:var(--border);
+}
+</style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div class="panel" id="pantalla-login">
-    <h1>⚡ Roblox Voice</h1>
-    <div class="sub">Control de hechizos por voz</div>
-    <div id="msg-login"></div>
-    <input type="text" id="login-user" placeholder="Usuario" autocomplete="off"/>
-    <input type="password" id="login-pass" placeholder="Contraseña"/>
-    <button class="btn btn-azul" onclick="login()">Iniciar sesión</button>
-    <div class="toggle" onclick="mostrarRegistro()">¿No tienes cuenta? Regístrate gratis</div>
+<!-- ════════════════════════════════ LOGIN ════════════════════════════════ -->
+<div class="screen active" id="screen-login">
+    <div class="card">
+        <div class="card-title">⚡ Roblox Voice</div>
+        <div class="card-sub">Control de hechizos por voz — 4 elementos</div>
+        <div class="msg" id="msg-login"></div>
+        <input type="text"     id="login-user" placeholder="Usuario"     autocomplete="username"/>
+        <input type="password" id="login-pass" placeholder="Contraseña"  autocomplete="current-password"/>
+        <button class="btn btn-primary" onclick="login()">Iniciar sesión</button>
+        <div class="link" onclick="showScreen('screen-registro')">¿No tienes cuenta? Regístrate gratis</div>
+    </div>
 </div>
 
-<!-- REGISTRO -->
-<div class="panel hidden" id="pantalla-registro">
-    <h1>⚡ Crear cuenta</h1>
-    <div class="sub">Únete al combate elemental</div>
-    <div id="msg-registro"></div>
-    <input type="text" id="reg-user" placeholder="Usuario" autocomplete="off"/>
-    <input type="password" id="reg-pass" placeholder="Contraseña"/>
-    <input type="password" id="reg-pass2" placeholder="Confirmar contraseña"/>
-    <button class="btn btn-verde" onclick="registro()">Crear cuenta</button>
-    <div class="toggle" onclick="mostrarLogin()">¿Ya tienes cuenta? Inicia sesión</div>
+<!-- ════════════════════════════════ REGISTRO ════════════════════════════════ -->
+<div class="screen" id="screen-registro">
+    <div class="card">
+        <div class="card-title">⚡ Crear cuenta</div>
+        <div class="card-sub">Únete al combate elemental</div>
+        <div class="msg" id="msg-registro"></div>
+        <input type="text"     id="reg-user"  placeholder="Usuario"              autocomplete="username"/>
+        <input type="password" id="reg-pass"  placeholder="Contraseña"           autocomplete="new-password"/>
+        <input type="password" id="reg-pass2" placeholder="Confirmar contraseña" autocomplete="new-password"/>
+        <button class="btn btn-success" onclick="registro()">Crear cuenta</button>
+        <div class="link" onclick="showScreen('screen-login')">¿Ya tienes cuenta? Inicia sesión</div>
+    </div>
 </div>
 
-<!-- PRINCIPAL -->
-<div class="panel hidden" id="pantalla-principal">
-    <h1>⚡ Roblox Voice</h1>
-    <div class="usuario-info">
-        Hola, <span class="nombre" id="nombre-usuario"></span>
-        <span class="salir" onclick="cerrarSesion()">salir</span>
+<!-- ════════════════════════════════ VINCULAR ════════════════════════════════ -->
+<div class="screen" id="screen-vincular">
+    <div class="card">
+        <div class="card-title">🔗 Vincular Roblox</div>
+        <div class="card-sub">Ingresa el código que aparece en tu pantalla de Roblox</div>
+        <div class="msg" id="msg-vincular"></div>
+        <input
+            type="text" id="input-codigo"
+            placeholder="Ej: ABC4829"
+            maxlength="10"
+            style="text-align:center;letter-spacing:6px;font-size:22px;text-transform:uppercase;font-weight:700"
+            oninput="this.value=this.value.toUpperCase()"
+        />
+        <button class="btn btn-primary" onclick="vincular()">🔗 Vincular con Roblox</button>
+        <div class="link" onclick="cerrarSesion()">← Cerrar sesión</div>
     </div>
+</div>
 
-    <!-- Vincular -->
-    <div id="seccion-vincular">
-        <div class="sub">Ingresa el código que aparece en Roblox</div>
-        <div id="msg-vincular"></div>
-        <input type="text" id="input-codigo" placeholder="Ej: ABC4829"
-               style="text-align:center;letter-spacing:5px;font-size:20px;text-transform:uppercase"/>
-        <button class="btn btn-azul" onclick="vincular()">🔗 Vincular con Roblox</button>
-    </div>
+<!-- ════════════════════════════════ VOICE CONTROL ════════════════════════════════ -->
+<div class="screen" id="screen-voz">
+    <div class="card">
 
-    <!-- Voz -->
-    <div id="seccion-voz" class="hidden">
-        <div class="codigo-box">
-            <div class="label">Jugador conectado</div>
-            <div class="nombre" id="nombre-roblox" style="font-size:18px;color:#6c63ff"></div>
+        <!-- Usuario + jugador -->
+        <div class="user-row">
+            <span id="user-display"></span>
+            <span class="user-logout" onclick="cerrarSesion()">salir</span>
         </div>
 
-        <button id="mic-btn" onclick="toggleMic()">🎙️</button>
-        <div id="estado">Presiona el micrófono para empezar</div>
-        <div id="ultimo"></div>
-
-        <div class="btns-row">
-            <button class="btn btn-gris" style="font-size:12px" onclick="desvincular()">🔄 Cambiar código</button>
+        <div class="code-box">
+            <div class="code-label">Jugador en Roblox</div>
+            <div class="code-player" id="player-name">—</div>
         </div>
 
-        <div id="log"></div>
-
-        <div class="comandos-grid">
-            <div class="cmd-tag fuego">🔥 "lanza fuego"</div>
-            <div class="cmd-tag fuego">🛡️ "escudo fuego"</div>
-            <div class="cmd-tag agua">🌊 "lanza agua"</div>
-            <div class="cmd-tag agua">🛡️ "escudo agua"</div>
-            <div class="cmd-tag tierra">🪨 "lanza tierra"</div>
-            <div class="cmd-tag tierra">🛡️ "escudo tierra"</div>
-            <div class="cmd-tag aire">💨 "lanza aire"</div>
-            <div class="cmd-tag aire">🛡️ "escudo aire"</div>
+        <!-- Status servidor -->
+        <div class="status-bar" id="server-status-bar">
+            <div class="status-dot" id="server-dot"></div>
+            <span class="status-text" id="server-text">Verificando servidor...</span>
         </div>
+
+        <!-- Micrófono -->
+        <div class="mic-wrapper">
+            <button id="mic-btn" onclick="toggleMic()" title="Presiona para hablar">🎙️</button>
+            <div id="mic-status">Presiona para activar el micrófono</div>
+        </div>
+
+        <div class="divider">historial de comandos</div>
+
+        <!-- Log -->
+        <div class="log-container">
+            <div class="log-header">
+                <span>Comandos enviados</span>
+                <span class="log-clear" onclick="clearLog()">limpiar</span>
+            </div>
+            <div id="log"></div>
+        </div>
+
+        <!-- Comandos disponibles -->
+        <div class="cmd-grid" id="cmd-grid">
+            <div class="cmd-pill fuego"  id="cmd-lanza-fuego">🔥 lanza fuego</div>
+            <div class="cmd-pill fuego"  id="cmd-escudo-fuego">🛡️ escudo fuego</div>
+            <div class="cmd-pill agua"   id="cmd-lanza-agua">🌊 lanza agua</div>
+            <div class="cmd-pill agua"   id="cmd-escudo-agua">🛡️ escudo agua</div>
+            <div class="cmd-pill tierra" id="cmd-lanza-tierra">🪨 lanza tierra</div>
+            <div class="cmd-pill tierra" id="cmd-escudo-tierra">🛡️ escudo tierra</div>
+            <div class="cmd-pill aire"   id="cmd-lanza-aire">💨 lanza aire</div>
+            <div class="cmd-pill aire"   id="cmd-escudo-aire">🛡️ escudo aire</div>
+        </div>
+
+        <div style="height:8px"></div>
+        <button class="btn btn-ghost" onclick="desvincular()">🔄 Cambiar código de Roblox</button>
     </div>
+</div>
+
+<!-- Keep-alive badge -->
+<div class="keepalive-badge" id="ka-badge" style="display:none">
+    <div class="keepalive-dot"></div>
+    <span id="ka-text">servidor activo</span>
 </div>
 
 <script>
+// ════════════════════════════════════════════════════════════════════════════
+//  CONFIGURACIÓN
+// ════════════════════════════════════════════════════════════════════════════
 const SERVER = "https://denathgood-github-io.onrender.com"
 
-// Todos los comandos posibles incluyendo variantes cortas
+// Todos los comandos ordenados de más específico a más corto
+// El orden importa — frases largas tienen prioridad
 const COMANDOS = [
-    "lanza fuego", "lanza agua", "lanza tierra", "lanza aire",
+    "lanza fuego",  "lanza agua",  "lanza tierra",  "lanza aire",
     "escudo fuego", "escudo agua", "escudo tierra", "escudo aire",
     "fuego", "agua", "tierra", "aire",
     "ataca", "escudo", "protege", "defiende",
 ]
 
-let token      = localStorage.getItem("token")
-let username   = localStorage.getItem("username")
-let codigo     = localStorage.getItem("codigo")
-let nombreRblx = localStorage.getItem("nombreRoblox")
-
-let recognition = null
-let conectado   = false
-let reiniciando = false
-let procesando  = false
-let ultimoCmd   = ""
-let ultimoCmdTime = 0
-
-window.onload = () => { token ? mostrarPrincipal() : mostrarLogin() }
-
-// ── Navegación ──
-function mostrarLogin()    { show("pantalla-login"); hide("pantalla-registro"); hide("pantalla-principal") }
-function mostrarRegistro() { show("pantalla-registro"); hide("pantalla-login") }
-function mostrarPrincipal() {
-    show("pantalla-principal"); hide("pantalla-login"); hide("pantalla-registro")
-    document.getElementById("nombre-usuario").textContent = username
-    if (codigo && nombreRblx) mostrarVoz()
+// IDs de los cmd-pills para resaltarlos
+const CMD_PILL_MAP = {
+    "lanza fuego":   "cmd-lanza-fuego",
+    "escudo fuego":  "cmd-escudo-fuego",
+    "lanza agua":    "cmd-lanza-agua",
+    "escudo agua":   "cmd-escudo-agua",
+    "lanza tierra":  "cmd-lanza-tierra",
+    "escudo tierra": "cmd-escudo-tierra",
+    "lanza aire":    "cmd-lanza-aire",
+    "escudo aire":   "cmd-escudo-aire",
 }
-function mostrarVoz() {
-    hide("seccion-vincular"); show("seccion-voz")
-    document.getElementById("nombre-roblox").textContent = nombreRblx
+
+// ════════════════════════════════════════════════════════════════════════════
+//  ESTADO GLOBAL
+// ════════════════════════════════════════════════════════════════════════════
+let token      = localStorage.getItem("rblx_token")
+let username   = localStorage.getItem("rblx_username")
+let codigo     = localStorage.getItem("rblx_codigo")
+let nombreRblx = localStorage.getItem("rblx_player")
+
+let recognition  = null
+let micActive    = false
+let restarting   = false
+
+// Anti-spam: guarda último envío por comando
+let lastSent = {}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════════════════════════
+window.addEventListener("load", () => {
+    if (!token)                        showScreen("screen-login")
+    else if (!codigo || !nombreRblx)   showScreen("screen-vincular")
+    else {
+        showScreen("screen-voz")
+        initVoz()
+    }
+})
+
+// ════════════════════════════════════════════════════════════════════════════
+//  NAVEGACIÓN
+// ════════════════════════════════════════════════════════════════════════════
+function showScreen(id) {
+    document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"))
+    document.getElementById(id).classList.add("active")
 }
-function desvincular() {
-    localStorage.removeItem("codigo"); localStorage.removeItem("nombreRoblox")
-    codigo = null; nombreRblx = null
-    if (conectado) desconectarMic()
-    show("seccion-vincular"); hide("seccion-voz")
-}
+
 function cerrarSesion() {
-    localStorage.clear(); token=null; username=null; codigo=null
-    if (conectado) desconectarMic()
-    mostrarLogin()
-}
-function show(id) { document.getElementById(id).classList.remove("hidden") }
-function hide(id) { document.getElementById(id).classList.add("hidden") }
-function msg(id, texto, tipo) {
-    const el = document.getElementById(id)
-    el.className = tipo === "error" ? "error" : "exito"
-    el.textContent = texto
+    stopMic()
+    localStorage.clear()
+    token=null; username=null; codigo=null; nombreRblx=null
+    showScreen("screen-login")
 }
 
-// ── HTTP ──
-async function post(ruta, datos, conToken) {
+function desvincular() {
+    stopMic()
+    localStorage.removeItem("rblx_codigo")
+    localStorage.removeItem("rblx_player")
+    codigo=null; nombreRblx=null
+    showScreen("screen-vincular")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  MENSAJES
+// ════════════════════════════════════════════════════════════════════════════
+function setMsg(id, texto, tipo) {
+    const el = document.getElementById(id)
+    el.textContent = texto
+    el.className = "msg " + tipo
+}
+function clearMsg(id) {
+    const el = document.getElementById(id)
+    el.className = "msg"
+    el.textContent = ""
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  LOG
+// ════════════════════════════════════════════════════════════════════════════
+function log(texto, tipo="info") {
+    const container = document.getElementById("log")
+    const now = new Date()
+    const time = now.getHours().toString().padStart(2,"0") + ":" +
+                 now.getMinutes().toString().padStart(2,"0") + ":" +
+                 now.getSeconds().toString().padStart(2,"0")
+
+    const entry = document.createElement("div")
+    entry.className = "log-entry"
+    entry.innerHTML = `<span class="log-time">${time}</span><span class="log-text log-${tipo}">${texto}</span>`
+    container.prepend(entry)
+
+    // Max 40 entradas
+    while (container.children.length > 40) container.removeChild(container.lastChild)
+}
+
+function clearLog() {
+    document.getElementById("log").innerHTML = ""
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  HTTP
+// ════════════════════════════════════════════════════════════════════════════
+async function api(ruta, datos, conToken=false) {
     try {
         const headers = { "Content-Type": "application/json" }
-        if (conToken) headers["Authorization"] = `Bearer ${token}`
-        const r = await fetch(SERVER + ruta, { method: "POST", headers, body: JSON.stringify(datos) })
-        return await r.json()
-    } catch(e) { return { ok: false, error: "Sin conexión al servidor" } }
-}
-
-// ── Auth ──
-async function login() {
-    const u = document.getElementById("login-user").value.trim()
-    const p = document.getElementById("login-pass").value
-    if (!u || !p) return msg("msg-login","Completa todos los campos","error")
-    const r = await post("/auth/login", { username: u, password: p }, false)
-    if (!r.ok) return msg("msg-login", r.error, "error")
-    token = r.token; username = r.username
-    localStorage.setItem("token", token); localStorage.setItem("username", username)
-    mostrarPrincipal()
-}
-
-async function registro() {
-    const u  = document.getElementById("reg-user").value.trim()
-    const p  = document.getElementById("reg-pass").value
-    const p2 = document.getElementById("reg-pass2").value
-    if (!u || !p) return msg("msg-registro","Completa todos los campos","error")
-    if (p !== p2) return msg("msg-registro","Las contraseñas no coinciden","error")
-    const r = await post("/auth/registro", { username: u, password: p }, false)
-    if (!r.ok) return msg("msg-registro", r.error, "error")
-    msg("msg-registro","¡Cuenta creada! Inicia sesión","exito")
-    setTimeout(mostrarLogin, 1500)
-}
-
-async function vincular() {
-    const c = document.getElementById("input-codigo").value.trim().toUpperCase()
-    if (!c) return msg("msg-vincular","Ingresa el código","error")
-    const r = await post("/vincular", { codigo: c }, true)
-    if (!r.ok) return msg("msg-vincular", r.error, "error")
-    codigo = c; nombreRblx = r.nombre
-    localStorage.setItem("codigo", codigo); localStorage.setItem("nombreRoblox", nombreRblx)
-    mostrarVoz()
-}
-
-// ── Log ──
-function addLog(texto, tipo="info") {
-    const log = document.getElementById("log")
-    const div = document.createElement("div")
-    div.className = "log-item log-" + tipo
-    div.textContent = new Date().toLocaleTimeString() + " — " + texto
-    log.prepend(div)
-    // Limitar a 30 entradas
-    while (log.children.length > 30) log.removeChild(log.lastChild)
-}
-
-function setEstado(texto, clase) {
-    const btn = document.getElementById("mic-btn")
-    btn.className = clase || ""
-    document.getElementById("estado").textContent = texto
-}
-
-// ── Enviar comando con anti-duplicado ──
-async function enviarComando(cmd) {
-    const ahora = Date.now()
-    // Anti-duplicado: mismo comando en menos de 1.5s = ignorar
-    if (cmd === ultimoCmd && (ahora - ultimoCmdTime) < 1500) return
-    ultimoCmd     = cmd
-    ultimoCmdTime = ahora
-
-    addLog(`⚡ "${cmd}"`, "info")
-    document.getElementById("ultimo").textContent = `→ "${cmd}"`
-
-    const r = await post("/setcomando", { comando: cmd, codigo }, true)
-    if (r.ok) {
-        addLog(`✅ Enviado`, "ok")
-    } else if (r.cooldown) {
-        addLog(`⏳ Cooldown ${r.cooldown}s`, "warn")
-    } else {
-        addLog(`❌ ${r.error || "Error"}`, "err")
+        if (conToken && token) headers["Authorization"] = `Bearer ${token}`
+        const res = await fetch(SERVER + ruta, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(datos),
+            signal: AbortSignal.timeout(8000),
+        })
+        if (!res.ok) throw new Error("HTTP " + res.status)
+        return await res.json()
+    } catch(e) {
+        return { ok: false, error: e.message || "Sin conexión" }
     }
 }
 
-// ── Buscar comando en texto ──
+// ════════════════════════════════════════════════════════════════════════════
+//  AUTH — LOGIN
+// ════════════════════════════════════════════════════════════════════════════
+async function login() {
+    clearMsg("msg-login")
+    const u = document.getElementById("login-user").value.trim()
+    const p = document.getElementById("login-pass").value
+    if (!u || !p) return setMsg("msg-login","Completa todos los campos","error")
+
+    const btn = document.querySelector("#screen-login .btn-primary")
+    btn.disabled = true; btn.textContent = "Entrando..."
+
+    const r = await api("/auth/login", { username: u, password: p })
+    btn.disabled = false; btn.textContent = "Iniciar sesión"
+
+    if (!r.ok) return setMsg("msg-login", r.error || "Error al iniciar sesión", "error")
+
+    token = r.token; username = r.username
+    localStorage.setItem("rblx_token", token)
+    localStorage.setItem("rblx_username", username)
+
+    showScreen("screen-vincular")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  AUTH — REGISTRO
+// ════════════════════════════════════════════════════════════════════════════
+async function registro() {
+    clearMsg("msg-registro")
+    const u  = document.getElementById("reg-user").value.trim()
+    const p  = document.getElementById("reg-pass").value
+    const p2 = document.getElementById("reg-pass2").value
+
+    if (!u || !p)   return setMsg("msg-registro","Completa todos los campos","error")
+    if (p.length < 6) return setMsg("msg-registro","La contraseña debe tener al menos 6 caracteres","error")
+    if (p !== p2)   return setMsg("msg-registro","Las contraseñas no coinciden","error")
+
+    const btn = document.querySelector("#screen-registro .btn-success")
+    btn.disabled = true; btn.textContent = "Creando cuenta..."
+
+    const r = await api("/auth/registro", { username: u, password: p })
+    btn.disabled = false; btn.textContent = "Crear cuenta"
+
+    if (!r.ok) return setMsg("msg-registro", r.error || "Error al registrar","error")
+
+    setMsg("msg-registro","✅ ¡Cuenta creada! Iniciando sesión...","exito")
+    setTimeout(() => {
+        document.getElementById("login-user").value = u
+        showScreen("screen-login")
+    }, 1200)
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  VINCULAR CÓDIGO
+// ════════════════════════════════════════════════════════════════════════════
+async function vincular() {
+    clearMsg("msg-vincular")
+    const c = document.getElementById("input-codigo").value.trim().toUpperCase()
+    if (c.length < 6) return setMsg("msg-vincular","El código debe tener al menos 6 caracteres","error")
+
+    const btn = document.querySelector("#screen-vincular .btn-primary")
+    btn.disabled = true; btn.textContent = "Vinculando..."
+
+    const r = await api("/vincular", { codigo: c }, true)
+    btn.disabled = false; btn.textContent = "🔗 Vincular con Roblox"
+
+    if (!r.ok) return setMsg("msg-vincular", r.error || "Código inválido o expirado", "error")
+
+    codigo = c; nombreRblx = r.nombre
+    localStorage.setItem("rblx_codigo", codigo)
+    localStorage.setItem("rblx_player", nombreRblx)
+
+    showScreen("screen-voz")
+    initVoz()
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  INICIALIZAR PANTALLA DE VOZ
+// ════════════════════════════════════════════════════════════════════════════
+function initVoz() {
+    // Mostrar datos
+    document.getElementById("user-display").innerHTML =
+        `<span class="user-name">${username}</span>`
+    document.getElementById("player-name").textContent = nombreRblx || "—"
+
+    // Verificar servidor
+    checkServer()
+
+    // Keep-alive: ping cada 4 minutos para que Render no duerma
+    startKeepAlive()
+
+    log("Sistema iniciado — presiona el micrófono para empezar", "info")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  VERIFICAR SERVIDOR
+// ════════════════════════════════════════════════════════════════════════════
+async function checkServer() {
+    const dot  = document.getElementById("server-dot")
+    const text = document.getElementById("server-text")
+    try {
+        const res = await fetch(SERVER + "/comando?userId=ping&jobId=ping", {
+            signal: AbortSignal.timeout(6000)
+        })
+        if (res.ok) {
+            dot.className  = "status-dot online"
+            text.className = "status-text ok"
+            text.textContent = "✅ Servidor conectado"
+        } else throw new Error()
+    } catch {
+        dot.className  = "status-dot error"
+        text.className = "status-text"
+        text.textContent = "⚠️ Servidor no responde — reintentando..."
+        setTimeout(checkServer, 8000)
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  KEEP-ALIVE — Evita que Render duerma el servidor
+//  Ping cada 4 minutos
+// ════════════════════════════════════════════════════════════════════════════
+let keepAliveInterval = null
+let kaPings = 0
+
+function startKeepAlive() {
+    document.getElementById("ka-badge").style.display = "flex"
+    if (keepAliveInterval) clearInterval(keepAliveInterval)
+
+    keepAliveInterval = setInterval(async () => {
+        try {
+            const res = await fetch(SERVER + "/comando?userId=ka&jobId=keepalive", {
+                signal: AbortSignal.timeout(10000)
+            })
+            kaPings++
+            document.getElementById("ka-text").textContent = `servidor activo · ping #${kaPings}`
+
+            // Actualizar status bar también
+            const dot  = document.getElementById("server-dot")
+            const text = document.getElementById("server-text")
+            dot.className  = "status-dot online"
+            text.className = "status-text ok"
+            text.textContent = `✅ Servidor activo · ping #${kaPings}`
+        } catch {
+            document.getElementById("ka-text").textContent = "reconectando..."
+        }
+    }, 4 * 60 * 1000) // 4 minutos
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  ENVIAR COMANDO AL SERVIDOR
+// ════════════════════════════════════════════════════════════════════════════
+async function enviarComando(cmd) {
+    const now = Date.now()
+
+    // Anti-duplicado: mismo comando dentro de 800ms = ignorar
+    if (lastSent[cmd] && (now - lastSent[cmd]) < 800) return
+    lastSent[cmd] = now
+
+    // Resaltar pill del comando
+    flashPill(cmd)
+
+    // Estado visual
+    setMicStatus("⚡ Enviando: " + cmd, "sending")
+    document.getElementById("mic-btn").className = "sending"
+
+    log(`→ "${cmd}"`, "sent")
+
+    try {
+        const r = await api("/setcomando", { comando: cmd, codigo }, true)
+
+        if (r.ok) {
+            log(`✅ Ejecutado en Roblox`, "ok")
+            setMicStatus("✅ " + cmd, "ok")
+        } else if (r.cooldown) {
+            log(`⏳ Cooldown ${r.cooldown}s`, "warn")
+            setMicStatus(`⏳ ${r.cooldown}s para volver`, "warn")
+        } else {
+            log(`❌ ${r.error || "Error del servidor"}`, "err")
+            setMicStatus("❌ Error", "")
+        }
+    } catch(e) {
+        log("❌ Sin conexión al servidor", "err")
+        setMicStatus("❌ Sin conexión", "")
+    }
+
+    // Restaurar estado del mic después de 600ms
+    setTimeout(() => {
+        if (micActive) {
+            document.getElementById("mic-btn").className = "listening"
+            setMicStatus("🎙️ Escuchando...", "ok")
+        }
+    }, 600)
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  RESALTAR PILL DE COMANDO
+// ════════════════════════════════════════════════════════════════════════════
+function flashPill(cmd) {
+    const id = CMD_PILL_MAP[cmd]
+    if (!id) return
+    const el = document.getElementById(id)
+    if (!el) return
+    el.classList.add("active")
+    setTimeout(() => el.classList.remove("active"), 800)
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  BUSCAR COMANDO EN TEXTO
+//  Busca de frase más larga a más corta para máxima precisión
+// ════════════════════════════════════════════════════════════════════════════
+const COMANDOS_SORTED = [...COMANDOS].sort((a, b) => b.length - a.length)
+
 function buscarComando(texto) {
-    // Buscar de más largo a más corto para priorizar frases completas
-    const ordenados = [...COMANDOS].sort((a, b) => b.length - a.length)
-    for (const cmd of ordenados) {
-        if (texto.includes(cmd)) return cmd
+    const t = texto.toLowerCase().trim()
+    for (const cmd of COMANDOS_SORTED) {
+        if (t.includes(cmd)) return cmd
     }
     return null
 }
 
-// ── Speech Recognition ──
+// ════════════════════════════════════════════════════════════════════════════
+//  ESTADO DEL MICRÓFONO
+// ════════════════════════════════════════════════════════════════════════════
+function setMicStatus(texto, tipo="") {
+    const el = document.getElementById("mic-status")
+    el.textContent = texto
+    el.className = tipo
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  SPEECH RECOGNITION — Motor principal
+// ════════════════════════════════════════════════════════════════════════════
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition
 
-function crearReconocimiento() {
+function buildRecognition() {
     if (!SR) return null
     const r = new SR()
-    r.lang           = "es-ES"
-    r.continuous     = true
-    r.interimResults = true
-    r.maxAlternatives = 3
 
-    r.onstart = () => setEstado("🎙️ Escuchando...", "activo")
-    r.onspeechstart = () => setEstado("🔊 Voz detectada...", "hablando")
-    r.onspeechend   = () => setEstado("🎙️ Escuchando...", "activo")
+    r.lang            = "es-ES"
+    r.continuous      = true      // siempre escuchando
+    r.interimResults  = true      // resultados mientras hablas
+    r.maxAlternatives = 5         // más alternativas = más precisión
 
-    r.onerror = (e) => {
-        if (e.error === "no-speech" || e.error === "aborted") return
-        addLog("Error mic: " + e.error, "err")
-        if (conectado) {
-            setTimeout(() => {
-                if (conectado) try { recognition = crearReconocimiento(); recognition.start() } catch(e){}
-            }, 500)
+    // ── Inicio ──
+    r.onstart = () => {
+        micActive = true
+        document.getElementById("mic-btn").className = "listening"
+        setMicStatus("🎙️ Escuchando...", "ok")
+        log("Micrófono activado", "ok")
+    }
+
+    // ── Voz detectada ──
+    r.onspeechstart = () => {
+        document.getElementById("mic-btn").className = "detecting"
+        setMicStatus("🔊 Procesando voz...", "warn")
+    }
+
+    r.onspeechend = () => {
+        if (micActive) {
+            document.getElementById("mic-btn").className = "listening"
+            setMicStatus("🎙️ Escuchando...", "ok")
         }
     }
 
+    // ── Resultados — corazón del sistema ──
     r.onresult = (e) => {
         for (let i = e.resultIndex; i < e.results.length; i++) {
-            // Revisar todas las alternativas
-            for (let j = 0; j < e.results[i].length; j++) {
-                const texto = e.results[i][j].transcript.toLowerCase().trim()
+            const result = e.results[i]
+
+            // Revisar TODAS las alternativas (hasta 5)
+            for (let j = 0; j < result.length; j++) {
+                const texto = result[j].transcript.toLowerCase().trim()
                 const cmd   = buscarComando(texto)
 
                 if (cmd) {
-                    if (e.results[i].isFinal || j === 0) {
-                        enviarComando(cmd)
-                        return
-                    }
+                    // Enviar inmediatamente — tanto intermedios como finales
+                    enviarComando(cmd)
+                    return  // Un comando por resultado, sin duplicados
                 }
             }
         }
     }
 
-    r.onend = () => {
-        if (conectado && !reiniciando) {
-            reiniciando = true
+    // ── Error ──
+    r.onerror = (e) => {
+        // Errores normales — no interrumpir
+        if (e.error === "no-speech" || e.error === "aborted") return
+
+        log("Mic error: " + e.error, "warn")
+
+        // Si el micrófono sigue activo, reiniciar automáticamente
+        if (micActive && !restarting) {
+            restarting = true
             setTimeout(() => {
-                reiniciando = false
-                if (conectado) try { recognition.start() } catch(e){}
+                restarting = false
+                if (micActive) restartRecognition()
+            }, 400)
+        }
+    }
+
+    // ── Fin de sesión — reiniciar automáticamente ──
+    r.onend = () => {
+        if (micActive && !restarting) {
+            restarting = true
+            setTimeout(() => {
+                restarting = false
+                if (micActive) {
+                    try {
+                        recognition.start()
+                    } catch(e) {
+                        // Si falla, crear nueva instancia
+                        restartRecognition()
+                    }
+                }
             }, 150)
         }
     }
@@ -329,28 +876,100 @@ function crearReconocimiento() {
     return r
 }
 
-// ── Botón micrófono ──
-function toggleMic() {
-    if (!SR) { addLog("Usa Chrome para el micrófono","err"); return }
-    if (!conectado) {
-        conectado   = true
-        recognition = crearReconocimiento()
-        try {
-            recognition.start()
-            addLog("Micrófono activado","ok")
-            document.getElementById("mic-btn").textContent = "🔴"
-        } catch(e) { addLog("Error: "+e.message,"err"); conectado = false }
-    } else {
-        desconectarMic()
+function restartRecognition() {
+    if (recognition) {
+        try { recognition.stop() } catch(e) {}
+    }
+    recognition = buildRecognition()
+    if (recognition && micActive) {
+        try { recognition.start() } catch(e) {
+            log("Error reiniciando mic: " + e.message, "err")
+            micActive = false
+            document.getElementById("mic-btn").className = ""
+            document.getElementById("mic-btn").textContent = "🎙️"
+            setMicStatus("Error — presiona de nuevo", "")
+        }
     }
 }
 
-function desconectarMic() {
-    conectado = false
-    if (recognition) { try { recognition.stop() } catch(e){} }
-    setEstado("Desconectado")
+// ════════════════════════════════════════════════════════════════════════════
+//  TOGGLE MICRÓFONO
+// ════════════════════════════════════════════════════════════════════════════
+function toggleMic() {
+    if (!SR) {
+        log("Este navegador no soporta reconocimiento de voz. Usa Chrome.", "err")
+        setMicStatus("❌ Usa Google Chrome", "")
+        return
+    }
+
+    if (!micActive) {
+        startMic()
+    } else {
+        stopMic()
+    }
+}
+
+function startMic() {
+    recognition = buildRecognition()
+    if (!recognition) return
+
+    try {
+        recognition.start()
+        micActive = true
+        document.getElementById("mic-btn").textContent = "🔴"
+    } catch(e) {
+        log("No se pudo iniciar el micrófono: " + e.message, "err")
+        setMicStatus("❌ Error al iniciar", "")
+    }
+}
+
+function stopMic() {
+    micActive = false
+    if (recognition) {
+        try { recognition.stop() } catch(e) {}
+        recognition = null
+    }
+    document.getElementById("mic-btn").className = ""
     document.getElementById("mic-btn").textContent = "🎙️"
-    addLog("Micrófono desactivado","warn")
+    setMicStatus("Micrófono desactivado", "")
+    log("Micrófono desactivado", "warn")
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  VISIBILIDAD DE PÁGINA
+//  Si vuelves a la pestaña y el mic estaba activo, reiniciar
+// ════════════════════════════════════════════════════════════════════════════
+document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && micActive && (!recognition)) {
+        log("Pestaña activa — reconectando micrófono...", "info")
+        setTimeout(restartRecognition, 300)
+    }
+})
+
+// ════════════════════════════════════════════════════════════════════════════
+//  WAKE LOCK — Evitar que la pantalla se duerma en móvil
+// ════════════════════════════════════════════════════════════════════════════
+let wakeLock = null
+async function requestWakeLock() {
+    if ("wakeLock" in navigator) {
+        try {
+            wakeLock = await navigator.wakeLock.request("screen")
+            log("Pantalla bloqueada activa (wake lock)", "info")
+        } catch(e) {}
+    }
+}
+
+document.addEventListener("visibilitychange", async () => {
+    if (wakeLock !== null && document.visibilityState === "visible") {
+        await requestWakeLock()
+    }
+})
+
+// Iniciar wake lock cuando se activa el mic
+const origStartMic = startMic
+window.startMic = function() {
+    origStartMic()
+    requestWakeLock()
 }
 </script>
 </body>
